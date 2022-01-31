@@ -1,6 +1,14 @@
 # strava-mongo-lambda
 
-Creating a lambda to extract my strava data from a mongodb instance
+Creating a lambda to extract my strava data from a mongodb instance.
+
+In particular, I like to engage in virtual cycling on the [Zwift](https://zwift.com) platform. Which then saves my indoor cycling activities to [Strava](https://strava.com) as `VirtualRide` activities.
+
+Then [strava-gsheet-python](https://github.com/neozenith/strava-gsheet-python) is a Heroku project I use to extract my ride data to a free tier [Mongo Atlas](https://www.mongodb.com/atlas/database) database on it's way to a Google Sheet where I perform analysis.
+
+So the MongoDB instance deduplicates the entries and is a source of truth.
+
+This Lambda reads from MongoDB and saves the results to S3.
 
 ## Getting started
 
