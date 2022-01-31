@@ -4,13 +4,8 @@ import os
 import shlex
 import shutil
 import sys
-from subprocess import run
 from pathlib import Path
-
-import boto3
-
-session = boto3.session.Session(profile_name="play")
-s3_client = session.client("s3")
+from subprocess import run
 
 # NOTE:
 # 1. python ./tasks.py
@@ -64,12 +59,14 @@ pytest
 
 @task
 def format(c):
+    """Autoformat code and sort imports."""
     c.run("black .")
     c.run("isort .")
 
 
 @task
 def lint(c):
+    """Run linting and formatting checks."""
     c.run("black --check .")
     c.run("isort --check .")
     c.run("flake8 .")
@@ -77,12 +74,41 @@ def lint(c):
 
 @task(pre=[lint])
 def test(c):
+    """Run pytest."""
     c.run("python3 -m pytest")
 
 
 @task
 def build(c):
+    """Build the lambda into the dist folder."""
+    print("BUILDING...")
     _build_lambda("src", "dist", "requirements.txt")
+
+
+@task(pre=[build])
+def deploy(c):
+    """Package lambda and dependencies into a zip, upload to S3 and update target function code."""
+    # Third Party
+    import boto3
+
+    session = boto3.session.Session(profile_name="play")
+    s3_client = session.client("s3")
+    lambda_client = session.client("lambda")
+
+    PROJECT_NAME = "strava-mongo-lambda"
+    BUCKET_NAME = "play-projects-joshpeak"
+    FUNCTION_NAME = "strava-mongo-fetch"
+
+    print("PACKAGING...")
+    shutil.make_archive("code", "zip", "dist")
+
+    print("UPLOADING...")
+    s3_client.upload_file("code.zip", BUCKET_NAME, f"{PROJECT_NAME}/code.zip")
+
+    print(f"DEPLOYING s3://{BUCKET_NAME}/{PROJECT_NAME}/code.zip --> {FUNCTION_NAME}")
+    lambda_client.update_function_code(
+        FunctionName=FUNCTION_NAME, S3Bucket=BUCKET_NAME, S3Key=f"{PROJECT_NAME}/code.zip"
+    )
 
 
 def _check_deps(filename):
@@ -123,7 +149,9 @@ def _build_lambda(src_dir, out_dir, reqs):
 
     # install deps
     print(f"DEPS: {reqs} -> {out_dir}")
-    _shcmd(f".venv/bin/python3 -m pip install --target {out_dir} -r {reqs} --ignore-installed -qq")
+    install_cmd = f".venv/bin/python3 -m pip install --target {out_dir} -r {reqs} --ignore-installed -qq"
+    print(install_cmd)
+    _shcmd(install_cmd)
 
 
 if __name__ == "__main__":
