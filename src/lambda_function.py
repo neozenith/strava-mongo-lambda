@@ -7,18 +7,24 @@ from pprint import pprint as pp
 # Third Party
 # Third Party Libraries
 from dotenv import load_dotenv
+import boto3
 
 # Our Libraries
 from database import Database
 
 load_dotenv()
 db = Database(os.getenv("MONGO_CONNECTION_STRING"))
+s3_client = boto3.client("s3")
+
+BUCKET_NAME = os.getenv("BUCKET_NAME")
+KEY_PATH = os.getenv("KEY_PATH")
 
 
 def lambda_handler(event, context):
-    activities = list(db.get_activities({"type": {"$in": ["Ride", "VirtualRide"]}}))
-
-    return {"statusCode": 200, "body": json.dumps(process_activities(activities))}
+    activities = process_activities(list(db.get_activities({"type": {"$in": ["Ride", "VirtualRide"]}})))
+    json_data = "\n".join([json.dumps(a) for a in activities])
+    s3_client.put_object(Body=json_data, Bucket=BUCKET_NAME, Key=f"{KEY_PATH}/data.json")
+    return {"statusCode": 200, "body": json_data}
 
 
 def process_activities(activities):
