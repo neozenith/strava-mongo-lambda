@@ -8,7 +8,7 @@ Then [strava-gsheet-python](https://github.com/neozenith/strava-gsheet-python) i
 
 So the MongoDB instance deduplicates the entries and is a source of truth.
 
-This Lambda reads from MongoDB and saves the results to S3.
+This Lambda reads from MongoDB and saves the results to S3 where I am planning on migrating to Athena and QuickSight.
 
 ## Getting started
 
