@@ -1,27 +1,45 @@
 # strava-mongo-lambda
 
-Creating a lambda to extract my strava data from a mongodb instance.
-
 In particular, I like to engage in virtual cycling on the [Zwift](https://zwift.com) platform. Which then saves my indoor cycling activities to [Strava](https://strava.com) as `VirtualRide` activities.
 
-Then [strava-gsheet-python](https://github.com/neozenith/strava-gsheet-python) is a Heroku project I use to extract my ride data to a free tier [Mongo Atlas](https://www.mongodb.com/atlas/database) database on it's way to a Google Sheet where I perform analysis.
+This project exposes a FastAPI tiny webserver API behind an AWS lambda funtion URL which is protected with OAuth2 via Cognito.
 
-So the MongoDB instance deduplicates the entries and is a source of truth.
+The API allows me to securely trigger a sync of my Strava data to a Google Sheet for further analysis.
 
-This Lambda reads from MongoDB and saves the results to S3 where I am planning on migrating to Athena and QuickSight.
+As an intermediate, this sync will save a copy of the Strava activities to a free tier of Mongo Atlas, giving me the option to pivot away from Google Sheets later.
 
-## Getting started
+# Generate Strava Swagger Codegen
 
 ```sh
-python3 tasks.py init
-. ./.venv/bin/activate
-
-inv --list
-Available tasks:
-
-  build    Build the lambda into the dist folder.
-  deploy   Package lambda and dependencies into a zip, upload to S3 and update target function code.
-  format   Autoformat code and sort imports.
-  lint     Run linting and formatting checks.
-  test     Run pytest.
+# Using OAPIv3 codegen
+brew install swagger-codegen
+swagger-codegen generate -i https://developers.strava.com/swagger/swagger.json -l python -o strava
 ```
+
+# Local Development
+
+```sh
+invoke dev
+```
+
+# Deployment
+
+## Setup
+
+You will need to define credential details in `.env` and also log into ECR registry.
+You will also need Docker installed and active to build lambda container image
+
+```sh
+invoke ecr-login
+```
+
+## Build Artifact 
+
+```sh
+invoke build-lambda-container deploy-lambda-container
+```
+
+## Go Live
+
+This part is still clickops to make the lambda point at the latest uploaded image.
+Room for automation improvement of course.

@@ -1,175 +1,129 @@
-#!/usr/bin/env python3
 # Standard Library
 import os
-import shlex
+import re
 import shutil
-import sys
 from pathlib import Path
-from subprocess import run
 
-# NOTE:
-# 1. python ./tasks.py
-#    - Bootstrap venv and install invoke and create dummy decorator in interim
-# 2. invoke <name of task>
-#    - This should successfully import invoke and task decorator
-try:
-    # Third Party
-    from invoke import task
-except ImportError:
-    task = lambda *args, **kwargs: lambda x: x  # noqa: E731
+# Third Party
+import boto3
+from dotenv import load_dotenv
+from invoke import task
+from invoke_common_tasks import format, init_config, lint, typecheck  # noqa
 
-DEFAULT_PYPROJECT_CONFIG = """
-[tool.black]
-line-length = 120
-
-[tool.isort]
-profile = "black"
-multi_line_output = 3
-import_heading_stdlib = "Standard Library"
-import_heading_firstparty = "Our Libraries"
-import_heading_thirdparty = "Third Party"
-
-[tool.pytest.ini_options]
-minversion = "6.0"
-addopts = "-v --color=yes"
-
-"""
-
-DEFAULT_FLAKE8_CONFIG = """
-[flake8]
-max-line-length=120
-max-complexity = 10
-exclude =
-    # No need to traverse our git directory
-    .git,
-    # There's no value in checking cache directories
-    __pycache__,
-    # Ignore virtual environment folders
-    .venv
-"""
-
-DEFAULT_REQUIREMENTS_DEV = """
-invoke
-flake8
-isort
-black
-pytest
-"""
-
+load_dotenv()
+AWS_REGION = os.getenv("AWS_REGION")
+AWS_PROFILE = os.getenv("AWS_PROFILE")
+ECR_HOST = os.getenv("ECR_HOST")
+ECR_REPO = os.getenv("ECR_REPO")
+strip_version_numbers = re.compile("==.*$")
 
 @task
-def format(c):
-    """Autoformat code and sort imports."""
-    c.run("black .")
-    c.run("isort .")
-
-
-@task
-def lint(c):
-    """Run linting and formatting checks."""
-    c.run("black --check .")
-    c.run("isort --check .")
-    c.run("flake8 .")
-
-
-@task(pre=[lint])
-def test(c):
-    """Run pytest."""
-    c.run("python3 -m pytest")
-
-
-@task
-def build(c):
-    """Build the lambda into the dist folder."""
-    print("BUILDING...")
-    _build_lambda("src", "dist", "requirements.txt")
-
-
-@task(pre=[build])
-def deploy(c):
-    """Package lambda and dependencies into a zip, upload to S3 and update target function code."""
-    # Third Party
-    import boto3
-
-    session = boto3.session.Session(profile_name="play")
-    s3_client = session.client("s3")
-    lambda_client = session.client("lambda")
-
-    PROJECT_NAME = "strava-mongo-lambda"
-    BUCKET_NAME = "play-projects-joshpeak"
-    FUNCTION_NAME = "strava-mongo-fetch"
-
-    print("PACKAGING...")
-    shutil.make_archive("code", "zip", "dist")
-
-    print("UPLOADING...")
-    s3_client.upload_file("code.zip", BUCKET_NAME, f"{PROJECT_NAME}/code.zip")
-
-    print(f"DEPLOYING s3://{BUCKET_NAME}/{PROJECT_NAME}/code.zip --> {FUNCTION_NAME}")
-    lambda_client.update_function_code(
-        FunctionName=FUNCTION_NAME, S3Bucket=BUCKET_NAME, S3Key=f"{PROJECT_NAME}/code.zip"
+def ecr_login(c):
+    c.run(
+        f"aws ecr get-login-password --profile {AWS_PROFILE} --region {AWS_REGION} | docker login --username AWS --password-stdin {ECR_HOST}"
     )
 
 
-def _check_deps(filename):
-    if os.path.isfile(filename):
-        print(f"Installing deps from {filename}")
-        _shcmd(f".venv/bin/python3 -m pip install -qq --upgrade -r {filename}")
-
-
-def _check_config(filename, content):
-    if not os.path.isfile(filename):
-        print(f"Generating {filename} ...")
-        with open(filename, "w+") as f:
-            f.write(content)
-
-
-def _shcmd(command, args=[], **kwargs):
-    if "shell" in kwargs and kwargs["shell"]:
-        return run(command, **kwargs)
-    else:
-        cmd_parts = command if type(command) == list else shlex.split(command)
-        cmd_parts = cmd_parts + args
-        return run(cmd_parts + args, **kwargs)
-
-
-def _build_lambda(src_dir, out_dir, reqs):
-    target = src_dir
-    print(f"\nBUILD: {src_dir}")
+def _build_lambda(context, target):
+    print(f"\nBUILD: {target}")
+    out_dir_root = "build"
+    src_dir = Path(target)
+    out_dir = Path(out_dir_root) / target / target
+    out_dir_base = Path(out_dir_root) / target
 
     if not Path(src_dir).is_dir():
-        raise Error(f"Could not build '{target}' because missing folder '{src_dir}'")
+        raise ValueError(f"Could not build '{target}' because missing folder '{src_dir}'")
 
     print(f"CLEAN: {out_dir}")
     if Path(out_dir).is_dir():
-        shutil.rmtree(out_dir)
+        shutil.rmtree(out_dir, ignore_errors=True)
 
     print(f"COPY: {src_dir} -> {out_dir}")
     shutil.copytree(src_dir, out_dir)
 
+    requirements_filepath = _export_requirements(context, out_dir_base)
     # install deps
-    print(f"DEPS: {reqs} -> {out_dir}")
-    install_cmd = f".venv/bin/python3 -m pip install --target {out_dir} -r {reqs} --ignore-installed -qq"
-    print(install_cmd)
-    _shcmd(install_cmd)
+    # https://aws.amazon.com/premiumsupport/knowledge-center/lambda-python-package-compatible/
+    context.run(
+        f"""python3 -m pip install \
+        --target {out_dir_base} \
+        -r {requirements_filepath} \
+        --platform manylinux2014_x86_64 \
+        --implementation cp \
+        --only-binary=:all: \
+        --upgrade \
+        --ignore-installed""",
+        pty=True,
+    )
+
+    # TODO: Tidy this up so multiple lambdas can be built in parallel with this function
+    shutil.make_archive(f"./dist/{target}", "zip", f"./{out_dir_base}")
+    print(f"./dist/{target}.zip")
 
 
-if __name__ == "__main__":
+def _export_requirements(context, out_dir_base):
+    requirements_filepath = f"{out_dir_base}/requirements.in"
+    print(f"DEPS: {requirements_filepath} -> {out_dir_base}")
+    context.run(f"poetry export --without-hashes -o {requirements_filepath}")
+    # TODO: This is biting me in the arse that it is not actually resolving correct versions in the docker image 
+    _strip_version_numbers(requirements_filepath)
+    return requirements_filepath
 
-    if len(sys.argv) >= 2 and sys.argv[1] in ["init"]:
-        _shcmd("rm -rf .venv")
-        _shcmd("python3 -m venv .venv")
-        _shcmd(".venv/bin/python3 -m pip install --upgrade pip")
 
-        _check_config("requirements-dev.txt", DEFAULT_REQUIREMENTS_DEV)
-        _check_config("pyproject.toml", DEFAULT_PYPROJECT_CONFIG)
-        _check_config(".flake8", DEFAULT_FLAKE8_CONFIG)
+def _strip_version_numbers(filename):
+    output = []
+    with open(filename, "r") as f:
+        for line in f:
+            if "jinja" not in line: # Had to pin jinja2 to 3.0.3 as there was a breaking change in 3.1.0
+                output.append(strip_version_numbers.sub("", line))
+            else:
+                output.append(line)
 
-        _check_deps("requirements.txt")
-        _check_deps("requirements-dev.txt")
+    with open(filename, "w") as f:
+        f.write("".join(output))
 
-    else:
-        print("This script should be run as:\n\n./tasks.py init\n\n")
-        print("This will self bootstrap a virtual environment but then use:\n\n")
-        print(". ./.venv/bin/activate")
-        print("invoke --list")
+
+@task
+def dev(c):
+    """Start a FastAPI dev server."""
+    c.run("uvicorn app.app:app --reload", pty=True)
+
+
+@task
+def clean(c):
+    """Clean up artifacts."""
+    print("Removing build and dist...")
+    shutil.rmtree("build", ignore_errors=True)
+    shutil.rmtree("dist", ignore_errors=True)
+
+
+@task
+def build_lambda_container(c):
+    target_name = "app"
+    requirements_filepath = _export_requirements(c, target_name)
+    print(requirements_filepath)
+    c.run(f"docker build --progress plain -t {target_name}:latest .", pty=True)
+    c.run(f"docker tag {target_name}:latest {ECR_REPO}:latest", pty=True)
+
+
+@task
+def deploy_lambda_container(c):
+    c.run(f"docker push {ECR_REPO}:latest")
+
+
+@task
+def build_lambda(c):
+    """Build the lambda function specified. Default: app."""
+    _build_lambda(c, "app")
+
+
+@task
+def upload(c, target="app", profile="play", bucket="play-projects-joshpeak", prefix="lambda/code"):
+    """Upload artifact to s3."""
+    print(f"Upload profile: {profile}")
+    session = boto3.Session(profile_name=profile)
+    s3_client = session.client("s3")
+    src_file = f"./dist/{target}.zip"
+    print(f"Uploading: {src_file} --> s3://{bucket}/{prefix}/{target}.zip")
+    response = s3_client.upload_file(src_file, bucket, f"{prefix}/{target}.zip")
+    print(response)
