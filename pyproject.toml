@@ -7,7 +7,7 @@ profile = "black"
 multi_line_output = 3
 import_heading_stdlib = "Standard Library"
 import_heading_firstparty = "Our Libraries"
-import_heading_thirdparty = "Third Party"
+import_heading_thirdparty = "Third Party Libraries"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
@@ -25,7 +25,7 @@ license = "MIT"
 python = "^3.9"
 pymongo = {extras = ["srv"], version = "^4.3.2"}
 python-dotenv = "^0.21.0"
-swagger-client = {path = "strava"}
+swagger-client = {path = "strava.zip"}
 fastapi = {extras = ["all"], version = "^0.86.0"}
 python-jose = {extras = ["cryptography"], version = "^3.3.0"}
 jinja2 = "3.0.3"

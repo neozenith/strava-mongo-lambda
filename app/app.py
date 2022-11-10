@@ -1,20 +1,15 @@
 # Standard Library
-import io
-import json
 import os
-from pprint import pprint as pp
 
-from .core import extract, load, sync
-
-# Third Party
+# Third Party Libraries
 import boto3
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, Response
-from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from mangum import Mangum
 
+from .core import extract, load, sync
 from .core.auth import (
     authenticate_request,
     handle_auth_redirect,
@@ -36,8 +31,8 @@ load_dotenv()
 # we download them only on cold start
 # https://aws.amazon.com/blogs/compute/container-reuse-in-lambda/
 JWKS = get_jwks(userpool_id=COGNITO_USERPOOL_ID, region=AWS_REGION)
-for k in JWKS:
-    print(k)
+# for k in JWKS:
+#     print(k)
 
 boto3_session = None
 if os.getenv("AWS_PROFILE", None) is not None:

@@ -4,7 +4,7 @@ import re
 import shutil
 from pathlib import Path
 
-# Third Party
+# Third Party Libraries
 import boto3
 from dotenv import load_dotenv
 from invoke import task
@@ -16,6 +16,7 @@ AWS_PROFILE = os.getenv("AWS_PROFILE")
 ECR_HOST = os.getenv("ECR_HOST")
 ECR_REPO = os.getenv("ECR_REPO")
 strip_version_numbers = re.compile("==.*$")
+
 
 @task
 def ecr_login(c):
@@ -65,7 +66,7 @@ def _export_requirements(context, out_dir_base):
     requirements_filepath = f"{out_dir_base}/requirements.in"
     print(f"DEPS: {requirements_filepath} -> {out_dir_base}")
     context.run(f"poetry export --without-hashes -o {requirements_filepath}")
-    # TODO: This is biting me in the arse that it is not actually resolving correct versions in the docker image 
+    # TODO: This is biting me in the arse that it is not actually resolving correct versions in the docker image
     _strip_version_numbers(requirements_filepath)
     return requirements_filepath
 
@@ -74,7 +75,11 @@ def _strip_version_numbers(filename):
     output = []
     with open(filename, "r") as f:
         for line in f:
-            if "jinja" not in line: # Had to pin jinja2 to 3.0.3 as there was a breaking change in 3.1.0
+            if (
+                "swagger-client" in line
+            ):  # The installed "swagger-client" is actually the stub codegen'd into the folder `./strava`
+                output.append("./strava.zip\n")
+            elif "jinja" not in line:  # Had to pin jinja2 to 3.0.3 as there was a breaking change in 3.1.0
                 output.append(strip_version_numbers.sub("", line))
             else:
                 output.append(line)
@@ -97,7 +102,7 @@ def clean(c):
     shutil.rmtree("dist", ignore_errors=True)
 
 
-@task
+@task(pre=[clean, format])
 def build_lambda_container(c):
     target_name = "app"
     requirements_filepath = _export_requirements(c, target_name)

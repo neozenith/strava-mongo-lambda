@@ -2,8 +2,8 @@
 import base64
 import os
 import time
-from pprint import pprint as pp
 
+# Third Party Libraries
 # Third Party
 import httpx
 from dotenv import load_dotenv
@@ -35,17 +35,17 @@ def get_login_uri():
 
 def get_jwks(userpool_id, region):
     keys_url = f"https://cognito-idp.{region}.amazonaws.com/{userpool_id}/.well-known/jwks.json"
-    print(f"{keys_url=}")
+
     with httpx.Client() as client:
-        keys = client.get(keys_url).json()["keys"]
-        
-    return keys
+        result = client.get(keys_url).json()
+
+    return result["keys"]
 
 
 def authenticated_jwt(token, keys):
     if not token:
         return False
-    
+
     headers = jwt.get_unverified_headers(token)
 
     # search for the kid in the downloaded public keys
@@ -53,21 +53,20 @@ def authenticated_jwt(token, keys):
     if not K:  # If empty list of matches
         print("Public key not found in jwks.json")
         return False
-    
+
     public_key = jwk.construct(K[0])
     message, encoded_signature = str(token).rsplit(".", 1)
     decoded_signature = base64url_decode(encoded_signature.encode("utf-8"))
-    
+
     # verify the signature
     if not public_key.verify(message.encode("utf8"), decoded_signature):
         print("Signature verification failed")
         return False
 
     print("Signature successfully verified")
-    
+
     claims = jwt.get_unverified_claims(token)
-    pp(claims)
-    
+
     if time.time() > claims["exp"]:
         print("Token is expired")
         return False

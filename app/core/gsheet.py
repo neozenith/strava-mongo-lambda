@@ -42,9 +42,7 @@ class GoogleSheetWrapper:
         record_rangref = f"A2:{chr(64+col_count)}{row_count+2}"
         # Zero out old values
         self.worksheet.update(record_rangref, [["" for c in col_names] for row in activities])
-        self.worksheet.update(
-            record_rangref, [[self._serialize(c, row[c]) for c in col_names] for row in activities]
-        )
+        self.worksheet.update(record_rangref, [[self._serialize(c, row[c]) for c in col_names] for row in activities])
 
     def _serialize(self, key, value):
         if key == "start_date_local":

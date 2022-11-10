@@ -47,9 +47,7 @@ class StravaAPIWrapper:
         try:
             api_instance = swagger_client.ActivitiesApi()
             api_instance.api_client.configuration.access_token = self.credentials["access_token"]
-            api_response = api_instance.get_logged_in_athlete_activities(
-                page=page, per_page=per_page, **kwargs
-            )
+            api_response = api_instance.get_logged_in_athlete_activities(page=page, per_page=per_page, **kwargs)
         except ApiException as e:
             print("Exception when calling ActivitiesApi->getLoggedInAthleteActivities: %s\n" % e)
 

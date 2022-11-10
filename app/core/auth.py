@@ -1,4 +1,4 @@
-# Third Party
+# Third Party Libraries
 from fastapi import Request, Response
 from fastapi.responses import RedirectResponse
 
@@ -6,13 +6,13 @@ from .cognito import authenticated_jwt, get_login_uri
 
 
 def authenticate_request(request, JWKS):
-    print(f"authenticate_request#0 {request.url=}")
+    # print(f"authenticate_request#0 {request.url=}")
 
     id_token = request.cookies.get("id_token", None)
     access_token = request.cookies.get("access_token", None)
     refresh_token = request.cookies.get("refresh_token", None)
 
-    print(f"authenticate_request#1 {id_token=}")
+    # print(f"authenticate_request#1 {id_token=}")
     if not id_token:
         return False
 
@@ -20,8 +20,8 @@ def authenticate_request(request, JWKS):
     access_authenticated_claims = authenticated_jwt(token=access_token, keys=JWKS)
 
     # TODO: if authenticated claims return false then trigger refresh token flow.
-    print(f"authenticate_request#3 {id_authenticated_claims=}")
-    print(f"authenticate_request#3 {access_authenticated_claims=}")
+    # print(f"authenticate_request#3 {id_authenticated_claims=}")
+    # print(f"authenticate_request#3 {access_authenticated_claims=}")
 
     return {"id": id_authenticated_claims, "access": access_authenticated_claims}
 

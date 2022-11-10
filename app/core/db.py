@@ -23,7 +23,7 @@ class Database:
         for activity in activities:
             name = activity["name"]
             try:
-                output.append([name, str(collection.insert(activity))])
+                output.append([name, str(collection.insert_one(activity).inserted_id)])
             except Exception as err:
                 output.append([name, str(err)])
 

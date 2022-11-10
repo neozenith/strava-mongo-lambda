@@ -53,14 +53,14 @@ uvloop = ["uvloop (>=0.15.2)"]
 
 [[package]]
 name = "boto3"
-version = "1.26.4"
+version = "1.26.6"
 description = "The AWS SDK for Python"
 category = "dev"
 optional = false
 python-versions = ">= 3.7"
 
 [package.dependencies]
-botocore = ">=1.29.4,<1.30.0"
+botocore = ">=1.29.6,<1.30.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.6.0,<0.7.0"
 
@@ -69,7 +69,7 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.29.4"
+version = "1.29.6"
 description = "Low-level, data-driven core of boto 3."
 category = "dev"
 optional = false
@@ -915,11 +915,10 @@ full = ["itsdangerous", "jinja2", "python-multipart", "pyyaml", "requests"]
 [[package]]
 name = "swagger-client"
 version = "1.0.0"
-description = ""
+description = "Strava API v3"
 category = "main"
 optional = false
 python-versions = "*"
-develop = false
 
 [package.dependencies]
 certifi = "*"
@@ -928,8 +927,8 @@ six = ">=1.10"
 urllib3 = ">=1.15"
 
 [package.source]
-type = "directory"
-url = "strava"
+type = "file"
+url = "strava.zip"
 
 [[package]]
 name = "tomli"
@@ -941,7 +940,7 @@ python-versions = ">=3.7"
 
 [[package]]
 name = "types-invoke"
-version = "1.7.3.3"
+version = "1.7.3.5"
 description = "Typing stubs for invoke"
 category = "dev"
 optional = false
@@ -1033,7 +1032,7 @@ python-versions = ">=3.7"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "c769c982dfe347dc1d8048070eab5b65e2a43d33fb049cd5f2b094aabd004d0d"
+content-hash = "84278f0a3886da61634e6b681d4cef11937f3b687e6fc3dc8229b1c7b300998d"
 
 [metadata.files]
 anyio = [
@@ -1068,12 +1067,12 @@ black = [
     {file = "black-22.10.0.tar.gz", hash = "sha256:f513588da599943e0cde4e32cc9879e825d58720d6557062d1098c5ad80080e1"},
 ]
 boto3 = [
-    {file = "boto3-1.26.4-py3-none-any.whl", hash = "sha256:9bfe15f394a7cd8ca2520e42722269d9aa2bbc222e348283c527d3aa88484314"},
-    {file = "boto3-1.26.4.tar.gz", hash = "sha256:244fd0776fc1f69c3ed34f359db7a90a6108372486abc999ce8515a79bbfc86e"},
+    {file = "boto3-1.26.6-py3-none-any.whl", hash = "sha256:2bd7d3e8362f0e0d84fe4c3a06f1bd46fd2dbedbea76ac24e89f28439837a9e7"},
+    {file = "boto3-1.26.6.tar.gz", hash = "sha256:4943faf38979ac445627390b431b0c08a73ccd5ecd46983e1d29cee454d14aaa"},
 ]
 botocore = [
-    {file = "botocore-1.29.4-py3-none-any.whl", hash = "sha256:4c7dedc1096417ac8a120a3f42b81bddaec5451cdd6add7af98680903fd73b18"},
-    {file = "botocore-1.29.4.tar.gz", hash = "sha256:fa86747f5092723c0dc7f201a48cdfac3ad8d03dd6cb7abc189abc708be43269"},
+    {file = "botocore-1.29.6-py3-none-any.whl", hash = "sha256:bb595ed6a42ff85b4d5fb7a2e31b8584b87df46933a6f830fd98f91b1feea279"},
+    {file = "botocore-1.29.6.tar.gz", hash = "sha256:574a9dc8b7cf1d866e6255c57af25de1f0da1babc6ce9faf05f227fd28ca905e"},
 ]
 cachetools = [
     {file = "cachetools-5.2.0-py3-none-any.whl", hash = "sha256:f9f17d2aec496a9aa6b76f53e3b614c965223c061982d434d160f930c698a9db"},
@@ -1765,14 +1764,16 @@ starlette = [
     {file = "starlette-0.20.4-py3-none-any.whl", hash = "sha256:c0414d5a56297d37f3db96a84034d61ce29889b9eaccf65eb98a0b39441fcaa3"},
     {file = "starlette-0.20.4.tar.gz", hash = "sha256:42fcf3122f998fefce3e2c5ad7e5edbf0f02cf685d646a83a08d404726af5084"},
 ]
-swagger-client = []
+swagger-client = [
+    {file = "strava.zip", hash = "sha256:0bf54c1e843dce1ff4f926602f1085ad81b1a946f231e5ec4092270cd66e86cc"},
+]
 tomli = [
     {file = "tomli-2.0.1-py3-none-any.whl", hash = "sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc"},
     {file = "tomli-2.0.1.tar.gz", hash = "sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f"},
 ]
 types-invoke = [
-    {file = "types-invoke-1.7.3.3.tar.gz", hash = "sha256:c5b0fba46fe94c83eb0aef6d0652f8ff196fbcea5b955a0a9fc6997a63d88064"},
-    {file = "types_invoke-1.7.3.3-py3-none-any.whl", hash = "sha256:a14cb43fac2bda694904a93aed68aeb3ae9fda0bb285b45ae1e12e8f3602d3b5"},
+    {file = "types-invoke-1.7.3.5.tar.gz", hash = "sha256:1060cc26bb18c830d2017ec7baf849a1e8d9266c1443ef2d8aedb6dea178468b"},
+    {file = "types_invoke-1.7.3.5-py3-none-any.whl", hash = "sha256:56e1f95d20cb47ecd61c89012bea64f66ad316a1a21f528a67174afdb5be5436"},
 ]
 typing-extensions = [
     {file = "typing_extensions-4.4.0-py3-none-any.whl", hash = "sha256:16fa4864408f655d35ec496218b85f79b3437c829e93320c7c9215ccfd92489e"},
