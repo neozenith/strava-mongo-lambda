@@ -5,6 +5,7 @@ import os
 import boto3
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, Response
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from mangum import Mangum
@@ -54,9 +55,9 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
 
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
-    return {"message": "Hello"}
+    return templates.TemplateResponse("index.html", {"request": request})
 
 
 @app.get("/extract")
