@@ -2,6 +2,9 @@
 
 Glorified TODO list
 
- - Switch from Strava Swagger codegen to raw HTTP requests
-   - https://developers.strava.com/docs/reference/#api-Activities-getLoggedInAthleteActivities
  - handle refresh tokens
+ - Improve sync result page visual output
+ - improve basic CSS styling
+ - Add architecture diagram
+ - Migrate serverless definition from clickops to terraform
+ - Add plotly visualisation
