@@ -67,7 +67,7 @@ async def extract_activities(request: Request, after_days_ago: int = 1):
     if not authenticated_claims:
         return redirect_to_login(request)
 
-    return len(extract(after_days_ago=after_days_ago))
+    return extract(after_days_ago=after_days_ago)
 
 
 @app.get("/load")

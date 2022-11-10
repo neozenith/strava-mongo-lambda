@@ -49,7 +49,8 @@ def extract(**kwargs):
     t.append(time.time())
     # Iterate all paginations until reach an empty page
     while len(activities) > 0:
-        activities = strava.list_activities(page=page, **kwargs)
+        activities = strava.list_activities(page=page, per_page=30, **kwargs)
+        # pp(activities)
         print(f"page:{page} [{len(activities)}]")
         total = total + len(activities)
         page = page + 1

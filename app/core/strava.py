@@ -7,13 +7,13 @@ Simplify the Strava API with a wrapper to abstract only the tasks needed.
 import time
 
 # Third Party Libraries
-import requests
-import swagger_client
-from swagger_client.rest import ApiException
+import httpx
 
 
 class StravaAPIWrapper:
     """Simplify the Strava API with a wrapper to abstract only the tasks needed."""
+
+    API_ROOT = "https://www.strava.com/api/v3/"
 
     def __init__(self, client_id, client_secret, credentials, save_credential_callback):
         """Create StravaAPIWrapper instance with an access token."""
@@ -24,9 +24,9 @@ class StravaAPIWrapper:
         self.save_credential_callback = save_credential_callback
 
     def _refresh_credentials(self):
-        response = requests.post(
-            "https://www.strava.com/api/v3/oauth/token",
-            {
+        response = httpx.post(
+            f"{self.API_ROOT}oauth/token",
+            data={
                 "grant_type": "refresh_token",
                 "client_id": self.client_id,
                 "client_secret": self.client_secret,
@@ -42,14 +42,11 @@ class StravaAPIWrapper:
         if self.credentials["expires_at"] <= time.time():
             self._refresh_credentials()
 
-        api_response = []
-
-        try:
-            api_instance = swagger_client.ActivitiesApi()
-            api_instance.api_client.configuration.access_token = self.credentials["access_token"]
-            api_response = api_instance.get_logged_in_athlete_activities(page=page, per_page=per_page, **kwargs)
-        except ApiException as e:
-            print("Exception when calling ActivitiesApi->getLoggedInAthleteActivities: %s\n" % e)
+        api_response = httpx.get(
+            f"{self.API_ROOT}athlete/activities",
+            headers={"Authorization": f"Bearer {self.credentials['access_token']}"},
+            params={"per_page": per_page, "page": page, **kwargs},
+        ).json()
 
         return [self._filtered_activity(a) for a in api_response]
 
@@ -71,4 +68,4 @@ class StravaAPIWrapper:
             "max_watts",
             "weighted_average_watts",
         ]
-        return {attr: getattr(activity, attr) for attr in activity.__dir__() if attr in target_attributes}
+        return {attr: value for attr, value in activity.items() if attr in target_attributes}

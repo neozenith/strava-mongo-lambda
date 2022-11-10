@@ -8,14 +8,6 @@ The API allows me to securely trigger a sync of my Strava data to a Google Sheet
 
 As an intermediate, this sync will save a copy of the Strava activities to a free tier of Mongo Atlas, giving me the option to pivot away from Google Sheets later.
 
-# Generate Strava Swagger Codegen
-
-```sh
-# Using OAPIv3 codegen
-brew install swagger-codegen
-swagger-codegen generate -i https://developers.strava.com/swagger/swagger.json -l python -o strava
-```
-
 # Local Development
 
 ```sh

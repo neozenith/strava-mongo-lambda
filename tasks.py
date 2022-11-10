@@ -75,11 +75,7 @@ def _strip_version_numbers(filename):
     output = []
     with open(filename, "r") as f:
         for line in f:
-            if (
-                "swagger-client" in line
-            ):  # The installed "swagger-client" is actually the stub codegen'd into the folder `./strava`
-                output.append("./strava.zip\n")
-            elif "jinja" not in line:  # Had to pin jinja2 to 3.0.3 as there was a breaking change in 3.1.0
+            if "jinja" not in line:  # Had to pin jinja2 to 3.0.3 as there was a breaking change in 3.1.0
                 output.append(strip_version_numbers.sub("", line))
             else:
                 output.append(line)
