@@ -1,7 +1,6 @@
 .DS_Store
 dist/
 *.zip
-!strava.zip
 app/requirements.in
 
 # Byte-compiled / optimized / DLL files
