@@ -110,6 +110,9 @@ def build_lambda_container(c):
     c.run(f"docker build --progress plain -t {target_name}:latest .", pty=True)
     c.run(f"docker tag {target_name}:latest {ECR_REPO}:latest", pty=True)
 
+@task
+def run_lambda_container(c, port=9000):
+    c.run("docker run -p {port}:8080 {ECR_REPO}:latest", pty=True)
 
 @task
 def deploy_lambda_container(c):
