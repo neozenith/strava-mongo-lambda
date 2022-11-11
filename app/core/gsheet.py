@@ -54,7 +54,7 @@ class GoogleSheetWrapper:
             # return (value - datetime.datetime(1899, 12, 30, 0, 0, 0)).total_seconds() / 86400.0
             if type(value) == str:
                 value = datetime.datetime.strptime(value, "%Y-%m-%dT%H:%M:%S%z").replace(tzinfo=None)
-            
+
             return (value - datetime.datetime(1970, 1, 1, 0, 0, 0)).total_seconds() * 1000.0
 
         elif key in ["average_speed", "max_speed"]:
