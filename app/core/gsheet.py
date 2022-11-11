@@ -42,14 +42,21 @@ class GoogleSheetWrapper:
         record_rangref = f"A2:{chr(64+col_count)}{row_count+2}"
         # Zero out old values
         self.worksheet.update(record_rangref, [["" for c in col_names] for row in activities])
-        self.worksheet.update(record_rangref, [[self._serialize(c, row[c]) for c in col_names] for row in activities])
+
+        serialized_output = [[self._serialize(c, row.get(c, "")) for c in col_names] for row in activities]
+
+        self.worksheet.update(record_rangref, serialized_output)
 
     def _serialize(self, key, value):
         if key == "start_date_local":
             # Convert to Google Sheets datetime number format
             # starting from 1899/12/30 00:00:00 as float(0) days
             # return (value - datetime.datetime(1899, 12, 30, 0, 0, 0)).total_seconds() / 86400.0
+            if type(value) == str:
+                value = datetime.datetime.strptime(value, "%Y-%m-%dT%H:%M:%S%z").replace(tzinfo=None)
+            
             return (value - datetime.datetime(1970, 1, 1, 0, 0, 0)).total_seconds() * 1000.0
+
         elif key in ["average_speed", "max_speed"]:
             # Convert miles to kilometres
             return value * 1.60934
