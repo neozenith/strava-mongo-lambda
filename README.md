@@ -35,3 +35,65 @@ invoke build-lambda-container deploy-lambda-container
 
 This part is still clickops to make the lambda point at the latest uploaded image.
 Room for automation improvement of course.
+
+# Maintenance
+
+## Strava SDK
+
+<details>
+<summary><b>[OPTIONAL] Generate Strava SDK using Swagger Codegen</b></summary>
+
+### Step 1 - Generate SDK
+
+```bash
+# Using OAPIv3 codegen
+brew install swagger-codegen
+swagger-codegen generate -i https://developers.strava.com/swagger/swagger.json -l python -o strava
+```
+
+This will create:
+```sh
+strava
+├── README.md
+├── docs
+│   ├── ActivitiesApi.md
+│   ├── ...
+│   └── Zones.md
+├── git_push.sh
+├── requirements.txt
+├── setup.py
+├── swagger_client
+│   ├── __init__.py
+│   ├── api
+│   │   ├── __init__.py
+│   │   ├── activities_api.py
+│   │   ├── .....
+│   │   └── uploads_api.py
+│   ├── api_client.py
+│   ├── configuration.py
+│   ├── models
+│   │   ├── __init__.py
+│   │   ├── activities_body.py
+│   │   ├── ...
+│   │   └── zones.py
+│   └── rest.py
+├── test
+│   ├── __init__.py
+│   ├── test_activities_api.py
+│   ├── ...
+│   └── test_zones.py
+├── test-requirements.txt
+└── tox.ini
+```
+
+### Step 2 - Update `app/core/strava.py`
+
+For what I needed I decided that using the swagger generated code was overkill.
+
+`app/core/strava.py` is a `httpx` implementation of the raw API for just the requests I needed.
+
+In particular I only needed the `/athlete/activities` endpoint.
+
+So just check the filtered attributes that are grabbed are still the subset we want and there are no typos, renames, missing attributes or new attributes we wish to include.
+
+</details>
