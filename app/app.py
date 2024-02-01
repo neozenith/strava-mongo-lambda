@@ -1,5 +1,8 @@
 # Standard Library
 import os
+from pprint import pprint as pp
+from functools import wraps
+
 
 # Third Party Libraries
 import boto3
@@ -15,25 +18,20 @@ from .core.auth import (
     authenticate_request,
     handle_auth_redirect,
     handle_logout,
-    redirect_to_login,
-)
-from .core.cognito import (
-    AWS_REGION,
-    COGNITO_USERPOOL_ID,
-    exchange_oauth2_code,
-    get_jwks,
+    redirect_to_login
 )
 
-load_dotenv()
+from .core.cognito import CognitoWrapperFactory
+
+cognito = CognitoWrapperFactory()
+
 
 ##################### BEGIN LAMBDA COLD START CODE #####################
 
 # instead of re-downloading the public keys every time
 # we download them only on cold start
 # https://aws.amazon.com/blogs/compute/container-reuse-in-lambda/
-JWKS = get_jwks(userpool_id=COGNITO_USERPOOL_ID, region=AWS_REGION)
-# for k in JWKS:
-#     print(k)
+JWKS = cognito.get_jwks()
 
 boto3_session = None
 if os.getenv("AWS_PROFILE", None) is not None:
@@ -55,38 +53,70 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
 
 
+#TODO: https://stackoverflow.com/a/72644609/622276
+#TODO: https://stackoverflow.com/a/64656733/622276
+#TODO: https://stackoverflow.com/a/75908754/622276
+#TODO: https://fastapi.tiangolo.com/tutorial/dependencies/dependencies-in-path-operation-decorators/#add-dependencies-to-the-path-operation-decorator
+#TODO: https://fastapi.tiangolo.com/tutorial/middleware/
+#TODO: https://fastapi.tiangolo.com/advanced/middleware/
+# credentials_exception = HTTPException(
+#         status_code=status.HTTP_401_UNAUTHORIZED,
+#         detail="Could not validate credentials",
+#         headers={"WWW-Authenticate": "Bearer"},
+#     )
+
+
+def auth_required(func):
+    @wraps(func)
+    async def wrapper(*args, **kwargs):
+        return await func(*args, **kwargs)
+
+    return wrapper
+
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
 @app.get("/extract")
-async def extract_activities(request: Request, after_days_ago: int = 1):
+@auth_required
+async def extract_activities(request: Request, response: Response, after_days_ago: int = 1):
     """Extract activities from Strava into Mongo."""
-    authenticated_claims = authenticate_request(request, JWKS)
+    authenticated_claims = await authenticate_request(request, JWKS)
     if not authenticated_claims:
         return redirect_to_login(request)
+    elif not authenticated_claims["id"] or not authenticated_claims["access"]:
+        token = await cognito.exchange_auth2_refresh_token(refresh_token = request.cookies.get("refresh_token", None))
+        return handle_auth_redirect(request, response, token)
 
     return extract(after_days_ago=after_days_ago)
 
 
 @app.get("/load")
-async def load_activities(request: Request):
+@auth_required
+async def load_activities(request: Request, response: Response):
     """Load activities from Mongo into GSheet."""
-    authenticated_claims = authenticate_request(request, JWKS)
+    authenticated_claims = await authenticate_request(request, JWKS)
     if not authenticated_claims:
         return redirect_to_login(request)
-
+    elif not authenticated_claims["id"] or not authenticated_claims["access"]:
+        token = await cognito.exchange_auth2_refresh_token(refresh_token = request.cookies.get("refresh_token", None))
+        return handle_auth_redirect(request, response, token)
+    
     load()
     return {"status": "success"}
 
 
 @app.get("/sync")
-async def sync_activities(request: Request, after_days_ago: int = 1):
+@auth_required
+async def sync_activities(request: Request, response: Response, after_days_ago: int = 1):
     """Extract and Load activities from Strava to GSheet."""
-    authenticated_claims = authenticate_request(request, JWKS)
+    authenticated_claims = await authenticate_request(request, JWKS)
     if not authenticated_claims:
         return redirect_to_login(request)
+    elif not authenticated_claims["id"] or not authenticated_claims["access"]:
+        token = await cognito.exchange_auth2_refresh_token(refresh_token = request.cookies.get("refresh_token", None))
+        return handle_auth_redirect(request, response, token)
 
     return sync(after_days_ago=after_days_ago)
 
@@ -94,7 +124,7 @@ async def sync_activities(request: Request, after_days_ago: int = 1):
 @app.get("/auth")
 async def get_auth(request: Request, response: Response, code: str = None):
     if code:
-        token = await exchange_oauth2_code(code)
+        token = await cognito.exchange_oauth2_code(code)
         return handle_auth_redirect(request, response, token)
     else:
         return response

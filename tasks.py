@@ -15,6 +15,7 @@ AWS_REGION = os.getenv("AWS_REGION")
 AWS_PROFILE = os.getenv("AWS_PROFILE")
 ECR_HOST = os.getenv("ECR_HOST")
 ECR_REPO = os.getenv("ECR_REPO")
+MONGO_CONNECTION_STRING = os.getenv("MONGO_CONNECTION_STRING")
 strip_version_numbers = re.compile("==.*$")
 
 

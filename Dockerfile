@@ -1,4 +1,4 @@
-FROM public.ecr.aws/lambda/python:3.9
+FROM public.ecr.aws/lambda/python:3.11
 RUN python3 -m pip install --upgrade pip
 COPY app/requirements.in .
 RUN pip3 install -r requirements.in --target "${LAMBDA_TASK_ROOT}" \

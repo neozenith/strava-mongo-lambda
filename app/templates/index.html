@@ -5,11 +5,14 @@
 </head>
 <body>
     <ul>
-        <li><a href="/sync">Sync</a></li>
+        <li><a href="/sync?after_days_ago=1">Sync Last Day</a></li>
+        <li><a href="/sync?after_days_ago=7">Sync Last Week</a></li>
+        <li><a href="/sync?after_days_ago=30">Sync Last Month</a></li>
         <ul>
             <li><a href="/extract">Extract</a></li>
             <li><a href="/load">Load</a></li>
         </ul>        
+        <li><a href="/docs">FastAPI OpanAPI Docs</a></li>
         <li><a href="/logout">Logout</a></li>
     </ul>
     
